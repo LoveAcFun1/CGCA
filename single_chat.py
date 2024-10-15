@@ -22,7 +22,7 @@ def main():
 
     # 使用base model和adapter进行推理，无需手动合并权重
     model_name_or_path = '/home/lqb/llama-7B'
-    adapter_name_or_path = 'output/llama_CoNll03_noise/final'
+    adapter_name_or_path = 'output/llama_NER_BIO_ATDrop_uie/final'
 
     # 是否使用4bit进行推理，能够节省很多显存，但效果可能会有一定的下降
     load_in_4bit = False
@@ -67,13 +67,14 @@ def main():
         with torch.no_grad():
             outputs = model.generate(
                 input_ids=input_ids, max_new_tokens=max_new_tokens, do_sample=True,
-                top_p=top_p, temperature=temperature, repetition_penalty=repetition_penalty,
+                top_p=top_p, temperature=temperature, repetition_penalty=repetition_penalty,num_return_sequences = 5,
                 eos_token_id=tokenizer.eos_token_id
             )
-        outputs = outputs.tolist()[0][len(input_ids[0]):]
-        response = tokenizer.decode(outputs)
-        response = response.strip().replace(tokenizer.eos_token, "").strip()
-        print("Firefly：{}".format(response))
+        for out in outputs:
+            out = out.tolist()[len(input_ids[0]):]
+            response = tokenizer.decode(out)
+            response = response.strip().replace(tokenizer.eos_token, "").strip()
+            print("Firefly：{}".format(response))
         text = input('User：')
 
 

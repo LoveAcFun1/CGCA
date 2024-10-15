@@ -38,29 +38,10 @@ from transformers.trainer_pt_utils import (
     reissue_pt_warnings,
 )
 from transformers.trainer_utils import (
-    PREFIX_CHECKPOINT_DIR,
-    BestRun,
     EvalLoopOutput,
     EvalPrediction,
-    FSDPOption,
-    HPSearchBackend,
-    HubStrategy,
-    IntervalStrategy,
-    PredictionOutput,
-    RemoveColumnsCollator,
-    ShardedDDPOption,
-    TrainerMemoryTracker,
-    TrainOutput,
-    default_compute_objective,
     denumpify_detensorize,
-    enable_full_determinism,
-    find_executable_batch_size,
-    get_last_checkpoint,
     has_length,
-    number_of_arguments,
-    seed_worker,
-    set_seed,
-    speed_metrics,
 )
 from transformers.training_args import OptimizerNames, ParallelMode, TrainingArguments
 from transformers.utils import (

@@ -27,5 +27,7 @@ class QLoRAArguments:
     lora_alpha: Optional[int] = field(default=16, metadata={"help": "lora alpha"})
     lora_dropout: Optional[float] = field(default=0.05, metadata={"help": "lora dropout"})
     dataset: Optional[str] = field(default="", metadata={"help": "the file of training data"})
-    label_path: Optional[str] = field(default="", metadata={"help": "the file of training data"})
+    task: Optional[str] = field(default="", metadata={"help": "the task name RE/NER"})
+    quantization: Optional[int] = field(default=None, metadata={"help": "4/8/None"})
+    torch_dtype: Optional[str] = field(default="float16", metadata={"help": "the type in model, float16/bfloat16"})
 
