@@ -31,7 +31,7 @@ import logging
 import os
 from typing import List, Optional, Tuple, Union
 from utils.Drop_ATT_Llama import LlamaForCausalLM
-from utils.Drop_ATT_gemma import GemmaForCausalLM
+# from utils.Drop_ATT_gemma import GemmaForCausalLM
 
 
 def verify_model_dtype(model):
@@ -139,7 +139,7 @@ def init_components(args, training_args):
     torch_dtype = torch_dtype if torch_dtype in ["auto", None] else getattr(torch, torch_dtype)
     
     if quantization is not None:
-        quant_args = {"load_in_4bit": True} if quantization == 4 else {"load_in_8bit": True}
+        # quant_args = {"load_in_4bit": True} if quantization == 4 else {"load_in_8bit": True}
         if quantization == 4:
             bnb_config = BitsAndBytesConfig(
                 load_in_4bit=True,
@@ -163,16 +163,17 @@ def init_components(args, training_args):
         )
 
     # 加载模型
+    # config.rms_norm_eps = 5e-4 
     # model = Drop_Llama.from_pretrained(
     #         pretrained_model_name_or_path=args.model_name_or_path,
-    #         device_map=device_map,
+    #         device_map='auto',
     #         quantization_config=bnb_config,
     #         torch_dtype=torch_dtype,
     #         config=config,
     #         trust_remote_code=True,
     #         **quant_args,
     #     )
-    
+    # config.rms_norm_eps = 1e-3 
     model = LlamaForCausalLM.from_pretrained(
             pretrained_model_name_or_path=args.model_name_or_path,
             device_map=device_map,
@@ -191,6 +192,15 @@ def init_components(args, training_args):
     #         trust_remote_code=True,
     #         **quant_args,
     #     )
+    # model = AutoModelForCausalLM.from_pretrained(
+    #         pretrained_model_name_or_path=args.model_name_or_path,
+    #         device_map=device_map,
+    #         quantization_config=bnb_config,
+    #         torch_dtype=torch_dtype,
+    #         config=config,
+    #         trust_remote_code=True,
+    #         **quant_args,
+    #     )
     
     
     # 加载tokenzier
@@ -201,10 +211,11 @@ def init_components(args, training_args):
         use_fast=False if model.config.model_type == 'llama' else True
     )
     # QWenTokenizer比较特殊，pad_token_id、bos_token_id、eos_token_id均为None。eod_id对应的token为<|endoftext|>
-    if tokenizer.__class__.__name__ == 'QWenTokenizer':
-        tokenizer.pad_token_id = tokenizer.eod_id
-        tokenizer.bos_token_id = tokenizer.eod_id
-        tokenizer.eos_token_id = tokenizer.eod_id
+    if tokenizer.__class__.__name__ == 'QWenTokenizer' or tokenizer.__class__.__name__ == 'Qwen2TokenizerFast':
+        # tokenizer.pad_token_id = tokenizer.eod_id
+        # tokenizer.bos_token_id = tokenizer.eod_id
+        # tokenizer.eos_token_id = tokenizer.eod_id
+        tokenizer.pad_token = tokenizer.eos_token
     # ChatGLMTokenizer不需要设置，仅设置其他tokenizer
     elif tokenizer.__class__.__name__ != 'ChatGLMTokenizer':
         assert tokenizer.eos_token_id is not None

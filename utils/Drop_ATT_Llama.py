@@ -250,13 +250,13 @@ class AD_Dropout(torch.nn.Module):
         super(AD_Dropout, self).__init__()
         self.p = p
 
-    def forward(self, input_tensor, noise):
+    def forward(self, input_tensor, noise, noise_initialized):
         if self.training and noise is not None:
             output_tensor = input_tensor + noise#/self.p
-            if not torch.all(noise == 0):
+            if not noise_initialized:
                 # mask = torch.bernoulli(torch.full_like(input_tensor, 1 - self.p))
                 mask = self.create_mask(input_tensor, self.p)
-                mask = torch.where(mask < 1, torch.tensor(-1000, dtype=input_tensor.dtype).to("cuda"), torch.tensor(0, dtype=input_tensor.dtype).to("cuda"))
+                mask = torch.where(mask < 1, torch.tensor(-1000, dtype=input_tensor.dtype).to(input_tensor.device), torch.tensor(0, dtype=input_tensor.dtype).to(input_tensor.device))
                 output_tensor = (input_tensor + mask ) / (1 - self.p)
         else:
             output_tensor = input_tensor
@@ -350,6 +350,7 @@ class LlamaAttention(nn.Module):
         use_cache: bool = False,
         cache_position: Optional[torch.LongTensor] = None,
         noise: Optional[torch.Tensor] = None,
+        noise_initialized: Optional[bool] = None,
         **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
@@ -399,7 +400,7 @@ class LlamaAttention(nn.Module):
                 causal_mask = attention_mask[:, :, cache_position, : key_states.shape[-2]]
             attn_weights = attn_weights + causal_mask
         
-        attn_weights = self.dropout(attn_weights, noise)
+        attn_weights = self.dropout(attn_weights, noise, noise_initialized)
 
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
@@ -736,6 +737,7 @@ class LlamaDecoderLayer(nn.Module):
         use_cache: Optional[bool] = False,
         cache_position: Optional[torch.LongTensor] = None,
         noise: Optional[torch.Tensor] = None,
+        noise_initialized: Optional[bool] = None,
         **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
@@ -771,6 +773,7 @@ class LlamaDecoderLayer(nn.Module):
             use_cache=use_cache,
             cache_position=cache_position,
             noise = noise,
+            noise_initialized = noise_initialized,
             **kwargs,
         )
         hidden_states = residual + hidden_states
@@ -976,6 +979,7 @@ class LlamaModel(LlamaPreTrainedModel):
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         noise: Optional[torch.Tensor] = None,
+        noise_initialized: Optional[bool] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1037,7 +1041,8 @@ class LlamaModel(LlamaPreTrainedModel):
                     output_attentions,
                     use_cache,
                     cache_position,
-                    noise_in
+                    noise_in,
+                    noise_initialized
                 )
             else:
                 layer_outputs = decoder_layer(
@@ -1168,6 +1173,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         noise: Optional[torch.Tensor] = None,
+        noise_initialized: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -1213,15 +1219,16 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             return_dict=return_dict,
             cache_position=cache_position,
             noise = noise,
+            noise_initialized=noise_initialized
         )
 
         hidden_states = outputs[0]
-        if self.config.pretraining_tp > 1:
-            lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
-            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
-            logits = torch.cat(logits, dim=-1)
-        else:
-            logits = self.lm_head(hidden_states)
+        # if self.config.pretraining_tp > 1:
+        #     lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
+        #     logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
+        #     logits = torch.cat(logits, dim=-1)
+        # else:
+        logits = self.lm_head(hidden_states)
         logits = logits.float()
 
         loss = None

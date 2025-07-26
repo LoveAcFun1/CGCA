@@ -121,7 +121,7 @@ class AD_Dropout(torch.nn.Module):
             output_tensor = input_tensor + noise#/self.p
             if not torch.all(noise == 0):
                 mask = torch.bernoulli(torch.full_like(input_tensor, 1 - self.p))
-                mask = torch.where(mask < 1, torch.tensor(0, dtype=input_tensor.dtype).to("cuda"), mask)
+                mask = torch.where(mask < 1, torch.tensor(0, dtype=input_tensor.dtype).to(input_tensor.device), mask)
                 output_tensor = (input_tensor * mask ) / (1 - self.p)
         else:
             output_tensor = input_tensor
@@ -195,12 +195,12 @@ class Drop_Llama(LlamaForCausalLM):
 
         hidden_states = outputs[0]
         hidden_states = self.dropout(hidden_states, noise)
-        if self.pretraining_tp > 1:
-            lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.pretraining_tp, dim=0)
-            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.pretraining_tp)]
-            logits = torch.cat(logits, dim=-1)
-        else:
-            logits = self.lm_head(hidden_states)
+        # if self.pretraining_tp > 1:
+        #     lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.pretraining_tp, dim=0)
+        #     logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.pretraining_tp)]
+        #     logits = torch.cat(logits, dim=-1)
+        # else:
+        logits = self.lm_head(hidden_states)
         logits = logits.float()
 
         loss = None

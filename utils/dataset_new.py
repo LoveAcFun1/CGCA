@@ -5,6 +5,16 @@ from torch.utils.data import Dataset
 import os
 import random
 from transformers import AutoTokenizer, BitsAndBytesConfig
+
+# 加入树节点删除的必要的包
+import spacy
+# 加载spaCy英文模型
+nlp = spacy.load("en_core_web_sm")
+import nltk
+from nltk.corpus import wordnet
+# NLTK WordNet初始化
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
 # from noise_data import replace_instruction, random_pad_instruction, cut_instruction, cut_mix_instruction, opposit_instruction
 
 global_instructions = {
@@ -15,6 +25,69 @@ global_instructions = {
 }
 
 Noise_op = ["cut", "cut mix", "random pad", "replace", "opposit"]
+
+
+
+# 检查标记是否在任何实体内部
+def is_token_in_any_entity(token, entities):
+    return any(entity["pos"][0] <= token.idx < entity["pos"][1] for entity in entities)
+
+# 查找近义词
+def get_synonyms(word):
+    synonyms = set()
+    for syn in wordnet.synsets(word):
+        for lemma in syn.lemmas():
+            synonyms.add(lemma.name())
+    if word in synonyms:
+        synonyms.remove(word)
+    return list(synonyms)
+
+# 随机替换句子中的单词为其近义词
+def replace_with_synonyms(sentence):
+    words = sentence.split()
+    new_words = []
+    for word in words:
+        if random.random() < 0.9:
+            new_words.append(word)
+            continue
+        synonyms = get_synonyms(word)
+        if synonyms:
+            new_word = random.choice(synonyms)
+            new_words.append(new_word)
+        else:
+            new_words.append(word)
+    return ' '.join(new_words)
+
+
+def prepare(sentences):
+    # 处理每个句子
+    processed_sentences = []
+    for item in sentences:
+        sentence = item["sentence"]
+        entities = item["entities"]
+        doc = nlp(sentence)
+        tokens_to_keep = [token.text_with_ws for token in doc]
+        append = False
+        if entities:
+            for entity in entities:
+                entity_span = doc.char_span(entity["pos"][0], entity["pos"][1])
+                if entity_span:
+                    head_token = entity_span.root.head
+                    # 向上追溯，直到找到不属于任何实体的父节点或到达根节点
+                    while head_token and head_token != head_token.head and is_token_in_any_entity(head_token, entities):
+                        head_token = head_token.head
+                    # 如果找到的父节点不是根节点，且不属于任何实体，则删除
+                    if head_token and not is_token_in_any_entity(head_token, entities):
+                        tokens_to_keep[head_token.i] = ''
+                        append = True
+            # 重建句子，排除删除的词
+            new_sentence = ''.join(tokens_to_keep)
+        else:
+            new_sentence = replace_with_synonyms(sentence)
+            append = True
+
+        processed_sentences.append({"sentence": new_sentence, "entities": entities})
+    return processed_sentences
 
 
 class Data_prepare:
@@ -28,6 +101,7 @@ class Data_prepare:
             pass
         else:
             getattr(self, "prepare_data_" + self.type)()
+
         
     def prepare_data_NER(self, data_list, labels):
         example = []
@@ -36,7 +110,9 @@ class Data_prepare:
         instruction += "Option: " + labels_str + " \n" + "Text: " + "{0}" + " \n" + "Answer:"
         noise_instruction = self.noise_instruction
         noise_instruction += "Option: " + labels_str + " \n" + "Text: " + "{0}" + " \n" + "Answer:"
-        for idx, instance in enumerate(data_list ):
+        # Counterfactual_data = prepare(data_list)
+        Counterfactual_data = data_list
+        for idx, instance in enumerate(data_list):
             
             kv_pairs = []
 
@@ -54,11 +130,13 @@ class Data_prepare:
             example.append({
                     "id": str(idx),
                     "sentence": instance['sentence'],
+                    "Counterfactual_sentence": Counterfactual_data[idx]['sentence'],
                     "label": label,
                     "ground_truth": label,
                     "instruction": instruction,
                     "noise_instruction":noise_instruction
                 })
+        print(example[0])
         return example
     
     def prepare_data_RE(self, data_list, labels):
@@ -190,7 +268,7 @@ class SFTDataset(Dataset):
         self.instruction = global_instructions[type]
         self.noise_instruction = self.get_noise_instruction(self.instruction)
         self.prepare_data = Data_prepare(type, self.instruction, self.noise_instruction)
-        self.example = getattr(self.prepare_data, "prepare_data_" + type)(instances, labels)
+        self.example = getattr(self.prepare_data, "prepare_data_" + type)(instances[:4], labels)
         # if type == "NER":
         #     self.example = self.prepare_data_NER(instances, labels)
         # else:
@@ -223,7 +301,7 @@ class SFTDataset(Dataset):
     def __getitem__(self, index):
         data = self.example[index]
         instruction = data["instruction"].format(data["sentence"])
-        noise_instruction = data["noise_instruction"].format(data["sentence"])
+        noise_instruction = data["instruction"].format(data["Counterfactual_sentence"])
         label = data["label"]
 
         model_inputs = self.tokenizer(

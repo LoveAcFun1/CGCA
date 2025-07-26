@@ -23,9 +23,9 @@ def get_metrics(tokenizer, type):
             pred = preds[i].tolist()
             label = labels[i].tolist()
             response = tokenizer.decode(pred)
-            response = response.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
+            response = response.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace('<|endoftext|>',"").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
             label = tokenizer.decode(label)
-            label = label.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
+            label = label.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace('<|endoftext|>',"").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
             for l in label:
                 if l != "None":
                     t = 0 
@@ -142,9 +142,13 @@ def get_metrics(tokenizer, type):
             pred = preds[i].tolist()
             label = labels[i].tolist()
             response = tokenizer.decode(pred)
-            response = response.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
+            response = response.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace('<|endoftext|>',"").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
+            print("==================response==================")
+            print(response)
             label = tokenizer.decode(label)
-            label = label.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
+            print("==================label==================")
+            print(label)
+            label = label.strip().replace(tokenizer.eos_token, "").replace("<unk>", "").replace("<pad>", "").replace('<|endoftext|>',"").replace(tokenizer.eos_token, "").replace("!", "").strip().split("; ")
             for l in label:
                 if l != "None":
                     t = 0 

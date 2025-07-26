@@ -4,7 +4,7 @@ peft==0.4.0
 bitsandbytes==0.39.0
 loguru==0.7.0
 numpy==1.21.4
-pandas==1.2.5
+# pandas==1.2.5
 tqdm==4.62.3
 deepspeed==0.9.5
 tensorboard
@@ -14,6 +14,5 @@ tiktoken
 einops
 httpx
 scipy
-torch==1.13.1
 mmengine
 xformers

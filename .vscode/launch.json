@@ -11,10 +11,13 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "python":"/home/lqb/anaconda3/envs/llama/bin/python",
+            "python":"/home/lqb/miniconda3/envs/CGCA/bin/python",
             "args": ["--train_args_file",
-                    "train_args/qlora/NER-sft-qlora.json",
-                    ]
+                    "train_args/qlora-old/NER-sft-qlora.json",
+                    ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "1"  // 指定使用GPU 1
+            }
         }
     ]
 }

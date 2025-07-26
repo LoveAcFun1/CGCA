@@ -181,10 +181,11 @@ def init_components(args, training_args):
         use_fast=False if model.config.model_type == 'llama' else True
     )
     # QWenTokenizer比较特殊，pad_token_id、bos_token_id、eos_token_id均为None。eod_id对应的token为<|endoftext|>
-    if tokenizer.__class__.__name__ == 'QWenTokenizer':
-        tokenizer.pad_token_id = tokenizer.eod_id
-        tokenizer.bos_token_id = tokenizer.eod_id
-        tokenizer.eos_token_id = tokenizer.eod_id
+    if tokenizer.__class__.__name__ == 'QWenTokenizer' or tokenizer.__class__.__name__ == 'Qwen2TokenizerFast':
+        # tokenizer.pad_token_id = tokenizer.eod_id
+        # tokenizer.bos_token_id = tokenizer.eod_id
+        # tokenizer.eos_token_id = tokenizer.eod_id
+        tokenizer.pad_token = tokenizer.eos_token
     # ChatGLMTokenizer不需要设置，仅设置其他tokenizer
     elif tokenizer.__class__.__name__ != 'ChatGLMTokenizer':
         assert tokenizer.eos_token_id is not None
@@ -207,7 +208,7 @@ def init_components(args, training_args):
         
     print(f'memory footprint of model: {model.get_memory_footprint()/(1024*1024*1024)} GB')
     # 找到所有需要插入adapter的全连接层
-    adapter_name_or_path = 'output/gemma_NER_BIO_gemma/checkpoint-8687'
+    adapter_name_or_path = '/group/40064/johnbli/saved_models/LLM-BIO/bibm-qwen_r16_a16_fl16_b8_2e-6/final'
     model = PeftModel.from_pretrained(model, adapter_name_or_path).eval()
     model.print_trainable_parameters()
     model.config.torch_dtype = torch.float32
@@ -245,7 +246,7 @@ def main():
     eval_file = ["bc2gm", "bc4chemd", "GENIA_NER","AnatEM","ncbi"]
     for dataset in eval_file:
         print("eval file: " + dataset)
-        eval_dataset = SFTDataset("data/new_BIO/"+dataset, tokenizer, args.max_seq_length, is_train = False, type = args.task)
+        eval_dataset = SFTDataset("/group/40064/johnbli/Code/LLM_BIO/data/new_BIO/"+dataset, tokenizer, args.max_seq_length, is_train = False, type = args.task)
         trainer.eval_dataset = eval_dataset
         train_result = trainer.evaluate()
     eval_file_ood = ["JNLPBA", "bc5cdr"]
@@ -254,9 +255,9 @@ def main():
         print("eval file: " + dataset)
         if dataset == "JNLPBA":
             from utils.dataset_BIO import SFTDataset_jnl
-            eval_dataset = SFTDataset_jnl("/home/lqb/AT_llama/Get_data/JNLPBA/test_test.json", tokenizer, args.max_seq_length, is_train = False, type = args.task)
+            eval_dataset = SFTDataset_jnl("/group/40064/johnbli/Code/LLM_BIO/Get_data/JNLPBA/test.json", tokenizer, args.max_seq_length, is_train = False, type = args.task)
         else:
-            eval_dataset = SFTDataset("Get_data/"+dataset, tokenizer, args.max_seq_length, is_train = False, type = args.task)
+            eval_dataset = SFTDataset("/group/40064/johnbli/Code/LLM_BIO/Get_data/"+dataset, tokenizer, args.max_seq_length, is_train = False, type = args.task)
         
         trainer.eval_dataset = eval_dataset
         train_result = trainer.evaluate()

@@ -18,7 +18,7 @@ import numpy as np
 from typing import Optional
 import os
 import torch
-from transformers.deepspeed import deepspeed_init, deepspeed_load_checkpoint
+# from transformers.deepspeed import deepspeed_init, deepspeed_load_checkpoint
 from transformers.trainer_pt_utils import (
     DistributedTensorGatherer,
     IterableDatasetShard,
@@ -45,31 +45,9 @@ from transformers.trainer_utils import (
 )
 from transformers.training_args import OptimizerNames, ParallelMode, TrainingArguments
 from transformers.utils import (
-    ADAPTER_CONFIG_NAME,
-    ADAPTER_SAFE_WEIGHTS_NAME,
-    ADAPTER_WEIGHTS_NAME,
-    CONFIG_NAME,
-    SAFE_WEIGHTS_INDEX_NAME,
-    SAFE_WEIGHTS_NAME,
-    WEIGHTS_INDEX_NAME,
-    WEIGHTS_NAME,
-    can_return_loss,
-    find_labels,
-    get_full_repo_name,
-    is_accelerate_available,
-    is_apex_available,
-    is_datasets_available,
-    is_in_notebook,
-    is_ipex_available,
-    is_peft_available,
-    is_safetensors_available,
-    is_sagemaker_dp_enabled,
     is_sagemaker_mp_enabled,
-    is_torch_compile_available,
-    is_torch_neuroncore_available,
     is_torch_tpu_available,
     logging,
-    strtobool,
 )
 if is_sagemaker_mp_enabled():
     import smdistributed.modelparallel.torch as smp
@@ -264,8 +242,8 @@ class LoRATrainer(Trainer):
         prediction_loss_only = prediction_loss_only if prediction_loss_only is not None else args.prediction_loss_only
 
         # if eval is called w/o train, handle model prep here
-        if self.is_deepspeed_enabled and self.deepspeed is None:
-            _, _ = deepspeed_init(self, num_training_steps=0, inference=True)
+        # if self.is_deepspeed_enabled and self.deepspeed is None:
+        #     _, _ = deepspeed_init(self, num_training_steps=0, inference=True)
 
         model = self._wrap_model(self.model, training=False, dataloader=dataloader)
 

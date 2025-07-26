@@ -1,0 +1,16 @@
+Requirement already satisfied: pydantic in /home/lqb/miniconda3/envs/CGCA/lib/python3.10/site-packages (1.10.22)
+Collecting pydantic
+  Using cached pydantic-2.11.7-py3-none-any.whl.metadata (67 kB)
+Requirement already satisfied: pydantic-core in /home/lqb/miniconda3/envs/CGCA/lib/python3.10/site-packages (2.33.2)
+Collecting pydantic-core
+  Downloading pydantic_core-2.36.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Requirement already satisfied: annotated-types>=0.6.0 in /home/lqb/miniconda3/envs/CGCA/lib/python3.10/site-packages (from pydantic) (0.7.0)
+Requirement already satisfied: typing-extensions>=4.12.2 in /home/lqb/miniconda3/envs/CGCA/lib/python3.10/site-packages (from pydantic) (4.14.1)
+Requirement already satisfied: typing-inspection>=0.4.0 in /home/lqb/miniconda3/envs/CGCA/lib/python3.10/site-packages (from pydantic) (0.4.1)
+Using cached pydantic-2.11.7-py3-none-any.whl (444 kB)
+Installing collected packages: pydantic
+  Attempting uninstall: pydantic
+    Found existing installation: pydantic 1.10.22
+    Uninstalling pydantic-1.10.22:
+      Successfully uninstalled pydantic-1.10.22
+Successfully installed pydantic-2.11.7
